@@ -40,24 +40,34 @@ async def download_photo(message: types.Message):
     await message.photo[-1].download(destination=r"C:\Users\....\bot\photo\photos")
 
 
-@dp.message_handler(commands="spam")#The function of sending messages to users
-async def get_text_messages(msg: types.Message):
-    print(msg)
-    admin_id="user_name admin"# user_name admin
+class order(StatesGroup):
+    msg_spam = State()
+
+@dp.message_handler(commands="spam")
+async def start_spam(message: types.Message):
+    print(message)
+    admin_id = "quoddraco"  # user_name admin
     dt = datetime.datetime.now()
-    if msg.from_user.username == admin_id and msg.text.lower() == '/spam':
-        mess=("Админ: "+"Проверка функции рассылки")
-        cur = conn.cursor()
-        cur.execute(f'''SELECT id_user FROM user_data''')
-        spam_base = cur.fetchall()
-        for z in range(len(spam_base)):
-            await bot.send_message(spam_base[z][0], mess)
+    if message.from_user.username == admin_id and message.text.lower() == '/spam':
+        await message.answer('Напиши текст рассылки')
+        await order.msg_spam.set()
+
     else:
-        await msg.reply('Иди нахер')
-    text = msg.text
-    first_name = msg.from_user.first_name
-    username = msg.from_user.username
+        await message.reply('Иди нахер')
+    text = message.text
+    first_name = message.from_user.first_name
+    username = message.from_user.username
     log_write(first_name, username, text, dt)
+
+@dp.message_handler(state=order.msg_spam)
+async def fin_spam(message: types.Message, state: FSMContext):
+    cur = conn.cursor()
+    cur.execute(f'''SELECT id_user FROM user_data''')
+    spam_base = cur.fetchall()
+    for z in range(len(spam_base)):
+        await bot.send_message(spam_base[z][0],("Рассылка(админ): "+message.text))
+        await state.finish()
+
 
 @dp.message_handler(commands="logs")#Log view function
 async def get_text_messages(msg: types.Message):
